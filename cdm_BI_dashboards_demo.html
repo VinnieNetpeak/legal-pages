@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BI кинотеатра — демо-макеты дашбордов (Power BI)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#1F3864; --blue:#2E5496; --accent:#F2C200; --accent2:#E8A33D;
+    --bg:#F4F6FA; --card:#FFFFFF; --line:#E3E8F0; --txt:#1B2330; --muted:#7A869A;
+    --green:#2E9E5B; --red:#D6455A; --teal:#2BB3B3; --violet:#7B61FF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh}
+  /* sidebar */
+  .side{width:240px;background:var(--navy);color:#fff;flex-shrink:0;position:sticky;top:0;height:100vh;overflow:auto}
+  .brand{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .brand .logo{font-weight:800;font-size:18px;letter-spacing:.5px}
+  .brand .sub{font-size:11px;color:#A9B7D0;margin-top:4px}
+  .nav{padding:10px 0}
+  .nav button{width:100%;text-align:left;background:none;border:none;color:#C7D2E6;padding:11px 18px;font-size:13.5px;cursor:pointer;display:flex;align-items:center;gap:10px;border-left:3px solid transparent}
+  .nav button:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav button.active{background:rgba(255,255,255,.10);color:#fff;border-left-color:var(--accent);font-weight:600}
+  .nav .ico{width:18px;text-align:center;opacity:.9}
+  .side .foot{padding:16px 18px;font-size:10.5px;color:#8294B5;border-top:1px solid rgba(255,255,255,.12)}
+  /* main */
+  .main{flex:1;min-width:0}
+  .topbar{background:var(--card);border-bottom:1px solid var(--line);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+  .topbar h1{font-size:18px;font-weight:700;color:var(--navy)}
+  .topbar .desc{font-size:12px;color:var(--muted);margin-top:2px}
+  .filters{display:flex;gap:8px;flex-wrap:wrap}
+  .pill{background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:6px 13px;font-size:12px;color:var(--txt);display:flex;align-items:center;gap:6px}
+  .pill b{color:var(--blue)}
+  .wrap{padding:22px 28px}
+  .demo-note{background:#FFF7E0;border:1px solid #F0DDA0;color:#7a5b00;font-size:12px;padding:8px 14px;border-radius:8px;margin-bottom:18px}
+  .grid{display:grid;gap:16px}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:6px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(20,40,80,.04)}
+  .kpi .label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+  .kpi .val{font-size:26px;font-weight:800;color:var(--navy);margin-top:6px}
+  .kpi .delta{font-size:12px;margin-top:6px;font-weight:600}
+  .delta.up{color:var(--green)} .delta.down{color:var(--red)}
+  .cards-2{grid-template-columns:1fr 1fr}
+  .cards-3{grid-template-columns:1fr 1fr 1fr}
+  .cards-32{grid-template-columns:2fr 1fr}
+  .cards-23{grid-template-columns:1fr 2fr}
+  .ch-title{font-size:13.5px;font-weight:700;color:var(--navy);margin-bottom:2px}
+  .ch-sub{font-size:11px;color:var(--muted);margin-bottom:12px}
+  .chart-box{position:relative;height:240px}
+  .chart-box.sm{height:200px}
+  .chart-box.lg{height:300px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;padding:8px 10px;border-bottom:2px solid var(--line)}
+  td{padding:9px 10px;border-bottom:1px solid var(--line)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .bar-cell{display:flex;align-items:center;gap:8px}
+  .minibar{height:8px;border-radius:4px;background:var(--blue)}
+  .tag{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+  .tag.g{background:#E4F5EC;color:var(--green)} .tag.r{background:#FBE6EA;color:var(--red)}
+  .view{display:none} .view.active{display:block}
+  h2.sec{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:22px 0 10px}
+  @media(max-width:900px){.side{display:none}.cards-2,.cards-3,.cards-32,.cards-23{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="side">
+  <div class="brand"><div class="logo">CINEMA BI</div><div class="sub">Power BI · демо-макеты · Netpeak</div></div>
+  <div class="nav" id="nav">
+    <button data-v="exec" class="active"><span class="ico">◆</span> Сводный (руководитель)</button>
+    <button data-v="tickets"><span class="ico">🎫</span> Продажи билетов</button>
+    <button data-v="sessions"><span class="ico">🎬</span> Доходность сеансов</button>
+    <button data-v="bar"><span class="ico">🍿</span> Бар / фудкорт</button>
+    <button data-v="attend"><span class="ico">👥</span> Посещаемость</button>
+    <button data-v="loyalty"><span class="ico">★</span> Лояльность</button>
+    <button data-v="opex"><span class="ico">📊</span> OPEX / P&amp;L</button>
+  </div>
+  <div class="foot">Демо-макет. Цифры иллюстративные.<br>Источники: касса, POS бара, CRM, ERP, 1С, лояльность.</div>
+</nav>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <h1 id="title">Сводный дашборд руководителя</h1>
+      <div class="desc" id="desc">Ключевые показатели сети за период</div>
+    </div>
+    <div class="filters">
+      <span class="pill">Период: <b>Июнь 2026</b></span>
+      <span class="pill">Кинотеатр: <b>Все (4)</b></span>
+      <span class="pill">Обновлено: <b>сегодня 06:00</b></span>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="demo-note">Это демонстрационный макет — иллюстрация состава и логики отчётов. В рабочей системе Power BI данные подтягиваются автоматически из ваших источников и обновляются по расписанию.</div>
+
+    <!-- ============ EXEC ============ -->
+    <div class="view active" id="exec">
+      <div class="grid kpis">
+        <div class="card kpi"><div class="label">Выручка, всего</div><div class="val">₸ 312,4 млн</div><div class="delta up">▲ 8,6% к пред. периоду</div></div>
+        <div class="card kpi"><div class="label">Билетов продано</div><div class="val">186 540</div><div class="delta up">▲ 5,1%</div></div>
+        <div class="card kpi"><div class="label">Заполняемость</div><div class="val">61,3%</div><div class="delta up">▲ 3,2 п.п.</div></div>
+        <div class="card kpi"><div class="label">Выручка бара</div><div class="val">₸ 84,7 млн</div><div class="delta up">▲ 11,4%</div></div>
+        <div class="card kpi"><div class="label">Средний чек</div><div class="val">₸ 2 130</div><div class="delta up">▲ 2,8%</div></div>
+        <div class="card kpi"><div class="label">Участники лояльности</div><div class="val">41,2%</div><div class="delta up">▲ 1,9 п.п. доли</div></div>
+      </div>
+      <div class="grid cards-32">
+        <div class="card"><div class="ch-title">Динамика выручки по неделям</div><div class="ch-sub">Билеты + бар + прочее, ₸ млн</div><div class="chart-box"><canvas id="ex1"></canvas></div></div>
+        <div class="card"><div class="ch-title">Структура выручки</div><div class="ch-sub">Доля направлений</div><div class="chart-box"><canvas id="ex2"></canvas></div></div>
+      </div>
+      <div class="grid cards-2" style="margin-top:16px">
+        <div class="card"><div class="ch-title">Выручка по кинотеатрам</div><div class="ch-sub">₸ млн за период</div><div class="chart-box sm"><canvas id="ex3"></canvas></div></div>
+        <div class="card"><div class="ch-title">План / факт по выручке</div><div class="ch-sub">Накопительно, ₸ млн</div><div class="chart-box sm"><canvas id="ex4"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- ============ TICKETS ============ -->
+    <div class="view" id="tickets">
+      <div class="grid kpis">
+        <div class="card kpi"><div class="label">Билетов продано</div><div class="val">186 540</div><div class="delta up">▲ 5,1%</div></div>
+        <div class="card kpi"><div class="label">Выручка с билетов</div><div class="val">₸ 218,9 млн</div><div class="delta up">▲ 6,7%</div></div>
+        <div class="card kpi"><div class="label">Средняя цена билета</div><div class="val">₸ 1 174</div><div class="delta up">▲ 1,5%</div></div>
+        <div class="card kpi"><div class="label">Доля онлайн-продаж</div><div class="val">54,8%</div><div class="delta up">▲ 4,1 п.п.</div></div>
+        <div class="card kpi"><div class="label">Возвраты</div><div class="val">1,8%</div><div class="delta down">▲ 0,3 п.п.</div></div>
+      </div>
+      <div class="grid cards-23">
+        <div class="card"><div class="ch-title">Продажи по каналам</div><div class="ch-sub">Касса · сайт · приложение · киоск</div><div class="chart-box"><canvas id="tk2"></canvas></div></div>
+        <div class="card"><div class="ch-title">Продажи билетов по дням</div><div class="ch-sub">Кол-во билетов</div><div class="chart-box"><canvas id="tk1"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-top:16px"><div class="ch-title">Топ фильмов по выручке</div><div class="ch-sub">За период</div>
+        <table><thead><tr><th>Фильм</th><th class="num">Сеансов</th><th class="num">Билетов</th><th class="num">Выручка, ₸</th><th class="num">Заполн.</th></tr></thead><tbody id="tkTable"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ============ SESSIONS ============ -->
+    <div class="view" id="sessions">
+      <div class="grid kpis">
+        <div class="card kpi"><div class="label">Сеансов проведено</div><div class="val">4 312</div><div class="delta up">▲ 2,4%</div></div>
+        <div class="card kpi"><div class="label">Выручка на сеанс</div><div class="val">₸ 72 400</div><div class="delta up">▲ 4,1%</div></div>
+        <div class="card kpi"><div class="label">Доход на кресло</div><div class="val">₸ 444</div><div class="delta up">▲ 3,0%</div></div>
+        <div class="card kpi"><div class="label">Заполняемость</div><div class="val">61,3%</div><div class="delta up">▲ 3,2 п.п.</div></div>
+        <div class="card kpi"><div class="label">Убыточных сеансов</div><div class="val">7,6%</div><div class="delta down">▲ 0,5 п.п.</div></div>
+      </div>
+      <div class="grid cards-2">
+        <div class="card"><div class="ch-title">Заполняемость по времени суток</div><div class="ch-sub">Средняя по слотам</div><div class="chart-box"><canvas id="ss1"></canvas></div></div>
+        <div class="card"><div class="ch-title">Выручка на сеанс по дням недели</div><div class="ch-sub">₸ тыс.</div><div class="chart-box"><canvas id="ss2"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-top:16px"><div class="ch-title">Доходность сеансов: выручка vs заполняемость</div><div class="ch-sub">Каждая точка — фильм; размер — число сеансов</div><div class="chart-box lg"><canvas id="ss3"></canvas></div></div>
+    </div>
+
+    <!-- ============ BAR ============ -->
+    <div class="view" id="bar">
+      <div class="grid kpis">
+        <div class="card kpi"><div class="label">Выручка бара</div><div class="val">₸ 84,7 млн</div><div class="delta up">▲ 11,4%</div></div>
+        <div class="card kpi"><div class="label">Средний чек бара</div><div class="val">₸ 1 860</div><div class="delta up">▲ 3,3%</div></div>
+        <div class="card kpi"><div class="label">Attach rate</div><div class="val">48,9%</div><div class="delta up">▲ 2,1 п.п.</div></div>
+        <div class="card kpi"><div class="label">Маржа бара</div><div class="val">68,2%</div><div class="delta up">▲ 0,9 п.п.</div></div>
+        <div class="card kpi"><div class="label">Выручка на зрителя</div><div class="val">₸ 454</div><div class="delta up">▲ 5,6%</div></div>
+      </div>
+      <div class="grid cards-23">
+        <div class="card"><div class="ch-title">Топ позиций по выручке</div><div class="ch-sub">₸ млн</div><div class="chart-box"><canvas id="br1"></canvas></div></div>
+        <div class="card"><div class="ch-title">Выручка бара по неделям</div><div class="ch-sub">₸ млн · с привязкой к посещаемости</div><div class="chart-box"><canvas id="br2"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-top:16px"><div class="ch-title">Структура продаж бара по категориям</div><div class="ch-sub">Доля выручки и маржа</div>
+        <table><thead><tr><th>Категория</th><th class="num">Выручка, ₸</th><th class="num">Доля</th><th class="num">Маржа</th><th class="num">Attach</th></tr></thead><tbody id="brTable"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ============ ATTEND ============ -->
+    <div class="view" id="attend">
+      <div class="grid kpis">
+        <div class="card kpi"><div class="label">Посетителей</div><div class="val">186 540</div><div class="delta up">▲ 5,1%</div></div>
+        <div class="card kpi"><div class="label">Заполняемость</div><div class="val">61,3%</div><div class="delta up">▲ 3,2 п.п.</div></div>
+        <div class="card kpi"><div class="label">Пиковый день</div><div class="val">Суббота</div><div class="delta">78% заполн.</div></div>
+        <div class="card kpi"><div class="label">Доля выходных</div><div class="val">47%</div><div class="delta up">▲ 1,4 п.п.</div></div>
+        <div class="card kpi"><div class="label">Свободных кресел</div><div class="val">117,8 тыс.</div><div class="delta">потенциал</div></div>
+      </div>
+      <div class="grid cards-2">
+        <div class="card"><div class="ch-title">Посещаемость по дням недели</div><div class="ch-sub">Среднее число зрителей</div><div class="chart-box"><canvas id="at1"></canvas></div></div>
+        <div class="card"><div class="ch-title">Тепловая динамика по часам</div><div class="ch-sub">Заполняемость, %</div><div class="chart-box"><canvas id="at2"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-top:16px"><div class="ch-title">Заполняемость по залам и кинотеатрам</div><div class="ch-sub">% занятых кресел</div><div class="chart-box"><canvas id="at3"></canvas></div></div>
+    </div>
+
+    <!-- ============ LOYALTY ============ -->
+    <div class="view" id="loyalty">
+      <div class="grid kpis">
+        <div class="card kpi"><div class="label">Активных участников</div><div class="val">128 400</div><div class="delta up">▲ 6,2%</div></div>
+        <div class="card kpi"><div class="label">Новых за период</div><div class="val">9 870</div><div class="delta up">▲ 12,0%</div></div>
+        <div class="card kpi"><div class="label">Доля выручки по картам</div><div class="val">41,2%</div><div class="delta up">▲ 1,9 п.п.</div></div>
+        <div class="card kpi"><div class="label">Retention 90 дней</div><div class="val">57,8%</div><div class="delta up">▲ 2,3 п.п.</div></div>
+        <div class="card kpi"><div class="label">Баллов начислено</div><div class="val">18,4 млн</div><div class="delta">списано 11,2 млн</div></div>
+      </div>
+      <div class="grid cards-2">
+        <div class="card"><div class="ch-title">Рост базы участников</div><div class="ch-sub">Новые vs активные</div><div class="chart-box"><canvas id="ly1"></canvas></div></div>
+        <div class="card"><div class="ch-title">Когортный retention</div><div class="ch-sub">% возврата по месяцам регистрации</div><div class="chart-box"><canvas id="ly2"></canvas></div></div>
+      </div>
+      <div class="grid cards-2" style="margin-top:16px">
+        <div class="card"><div class="ch-title">Выручка: участники vs гости</div><div class="ch-sub">₸ млн по неделям</div><div class="chart-box sm"><canvas id="ly3"></canvas></div></div>
+        <div class="card"><div class="ch-title">Сегменты участников</div><div class="ch-sub">По частоте визитов</div><div class="chart-box sm"><canvas id="ly4"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- ============ OPEX ============ -->
+    <div class="view" id="opex">
+      <div class="grid kpis">
+        <div class="card kpi"><div class="label">Выручка</div><div class="val">₸ 312,4 млн</div><div class="delta up">▲ 8,6%</div></div>
+        <div class="card kpi"><div class="label">Операционные расходы</div><div class="val">₸ 221,0 млн</div><div class="delta down">▲ 6,1%</div></div>
+        <div class="card kpi"><div class="label">EBITDA</div><div class="val">₸ 91,4 млн</div><div class="delta up">▲ 15,2%</div></div>
+        <div class="card kpi"><div class="label">Рентабельность</div><div class="val">29,3%</div><div class="delta up">▲ 1,7 п.п.</div></div>
+        <div class="card kpi"><div class="label">Расходы / выручка</div><div class="val">70,7%</div><div class="delta up">▼ 1,7 п.п.</div></div>
+      </div>
+      <div class="grid cards-32">
+        <div class="card"><div class="ch-title">Выручка vs расходы vs EBITDA</div><div class="ch-sub">₸ млн по месяцам</div><div class="chart-box"><canvas id="op1"></canvas></div></div>
+        <div class="card"><div class="ch-title">Структура расходов</div><div class="ch-sub">Доля статей</div><div class="chart-box"><canvas id="op2"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-top:16px"><div class="ch-title">P&amp;L по статьям</div><div class="ch-sub">План / факт, ₸ млн</div>
+        <table><thead><tr><th>Статья</th><th class="num">План</th><th class="num">Факт</th><th class="num">Откл.</th><th class="num">% вып.</th></tr></thead><tbody id="opTable"></tbody></table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const NAVY='#1F3864',BLUE='#2E5496',ACC='#F2C200',GREEN='#2E9E5B',RED='#D6455A',TEAL='#2BB3B3',VIO='#7B61FF',GREY='#C7D0DE';
+Chart.defaults.font.family="'Segoe UI',Arial,sans-serif";
+Chart.defaults.font.size=11; Chart.defaults.color='#5a6678'; Chart.defaults.plugins.legend.labels.boxWidth=12;
+const charts={};
+const wk=['Нед.1','Нед.2','Нед.3','Нед.4'];
+const dows=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const grid={grid:{color:'#EDF1F7'}};
+function mk(id,cfg){const el=document.getElementById(id);if(!el||charts[id])return;charts[id]=new Chart(el,cfg);}
+
+function build(){
+ // EXEC
+ mk('ex1',{type:'line',data:{labels:wk,datasets:[
+   {label:'Билеты',data:[52,55,54,58],borderColor:BLUE,backgroundColor:'rgba(46,84,150,.1)',fill:true,tension:.35},
+   {label:'Бар',data:[19,21,21,24],borderColor:ACC,backgroundColor:'rgba(242,194,0,.12)',fill:true,tension:.35},
+   {label:'Прочее',data:[6,6,7,7],borderColor:TEAL,tension:.35}]},
+   options:{maintainAspectRatio:false,scales:{y:grid,x:{grid:{display:false}}}}});
+ mk('ex2',{type:'doughnut',data:{labels:['Билеты','Бар/фудкорт','Реклама','Прочее'],datasets:[{data:[218.9,84.7,5.2,3.6],backgroundColor:[BLUE,ACC,TEAL,GREY]}]},options:{maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right'}}}});
+ mk('ex3',{type:'bar',data:{labels:['ТРЦ Mega','City Mall','Park Cinema','Aport'],datasets:[{data:[104,88,71,49],backgroundColor:BLUE,borderRadius:5}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:grid,x:{grid:{display:false}}}}});
+ mk('ex4',{type:'line',data:{labels:wk,datasets:[
+   {label:'План',data:[75,150,228,300],borderColor:GREY,borderDash:[5,4],tension:.2},
+   {label:'Факт',data:[78,156,235,312],borderColor:GREEN,backgroundColor:'rgba(46,158,91,.1)',fill:true,tension:.2}]},
+   options:{maintainAspectRatio:false,scales:{y:grid,x:{grid:{display:false}}}}});
+
+ // TICKETS
+ const days=Array.from({length:14},(_,i)=>(i+1)+' июн');
+ mk('tk1',{type:'bar',data:{labels:days,datasets:[{label:'Билеты',data:[9,8,8,10,15,21,18,10,9,9,11,16,22,19].map(x=>x*430),backgroundColor:BLUE,borderRadius:3}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:grid,x:{grid:{display:false},ticks:{maxRotation:0,autoSkip:true}}}}});
+ mk('tk2',{type:'doughnut',data:{labels:['Приложение','Сайт','Касса','Киоск'],datasets:[{data:[34,21,33,12],backgroundColor:[VIO,TEAL,BLUE,GREY]}]},options:{maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right'}}}});
+ const tk=[['Аватар: Следующий рубеж',512,28940,'₸ 34,2 млн',74],['Дюна. Часть третья',388,21100,'₸ 25,7 млн',69],['Головоломка 3',430,24300,'₸ 24,9 млн',66],['Форсаж 11',356,15870,'₸ 18,1 млн',58],['Кунг-фу Панда 5',402,17220,'₸ 16,4 млн',54],['Прочие (38)',2224,79110,'₸ 99,6 млн',49]];
+ fillTable('tkTable',tk,[1,2,3],4);
+
+ // SESSIONS
+ mk('ss1',{type:'bar',data:{labels:['до 12:00','12–15','15–18','18–21','после 21'],datasets:[{label:'Заполняемость %',data:[31,48,63,79,57],backgroundColor:[GREY,TEAL,BLUE,GREEN,ACC],borderRadius:5}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{...grid,max:100},x:{grid:{display:false}}}}});
+ mk('ss2',{type:'bar',data:{labels:dows,datasets:[{label:'Выручка/сеанс',data:[58,55,57,62,79,94,86],backgroundColor:BLUE,borderRadius:4}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:grid,x:{grid:{display:false}}}}});
+ const bub=[[74,34.2,28],[69,25.7,20],[66,24.9,22],[58,18.1,18],[54,16.4,20],[49,12,15],[42,8,12],[80,30,26],[63,21,19]];
+ mk('ss3',{type:'bubble',data:{datasets:[{label:'Фильм',data:bub.map(b=>({x:b[0],y:b[1],r:b[2]})),backgroundColor:'rgba(46,84,150,.55)',borderColor:BLUE}]},options:{maintainAspectRatio:false,scales:{x:{...grid,title:{display:true,text:'Заполняемость, %'},max:100},y:{...grid,title:{display:true,text:'Выручка, ₸ млн'}}},plugins:{legend:{display:false}}}});
+
+ // BAR
+ mk('br1',{type:'bar',data:{labels:['Попкорн','Напитки','Снеки','Комбо-наборы','Хот-доги','Кофе'],datasets:[{data:[24.1,19.8,11.2,15.4,8.1,6.1],backgroundColor:ACC,borderRadius:4}]},options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:grid,y:{grid:{display:false}}}}});
+ mk('br2',{type:'line',data:{labels:wk,datasets:[
+   {label:'Выручка бара',data:[19,21,21,24],borderColor:ACC,backgroundColor:'rgba(242,194,0,.15)',fill:true,tension:.35,yAxisID:'y'},
+   {label:'Зрители, тыс.',data:[44,46,46,50],borderColor:BLUE,tension:.35,yAxisID:'y1'}]},
+   options:{maintainAspectRatio:false,scales:{y:{...grid,position:'left'},y1:{position:'right',grid:{display:false}},x:{grid:{display:false}}}}});
+ const br=[['Попкорн','₸ 24,1 млн','28%','72%','31%'],['Комбо-наборы','₸ 15,4 млн','18%','64%','19%'],['Напитки','₸ 19,8 млн','23%','78%','27%'],['Снеки','₸ 11,2 млн','13%','61%','14%'],['Хот-доги','₸ 8,1 млн','10%','55%','9%'],['Кофе','₸ 6,1 млн','7%','66%','8%']];
+ fillTable('brTable',br,[],-1);
+
+ // ATTEND
+ mk('at1',{type:'bar',data:{labels:dows,datasets:[{label:'Зрители',data:[18,16,17,19,28,34,31].map(x=>x*100),backgroundColor:BLUE,borderRadius:4}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:grid,x:{grid:{display:false}}}}});
+ mk('at2',{type:'line',data:{labels:['10','12','14','16','18','20','22','00'],datasets:[
+   {label:'Будни',data:[22,35,44,52,71,79,58,28],borderColor:BLUE,tension:.4},
+   {label:'Выходные',data:[38,55,68,74,86,88,72,41],borderColor:ACC,tension:.4}]},
+   options:{maintainAspectRatio:false,scales:{y:{...grid,max:100},x:{grid:{display:false}}}}});
+ mk('at3',{type:'bar',data:{labels:['Mega·Зал1','Mega·Зал2','Mega·IMAX','City·Зал1','City·Зал2','Park·Зал1','Park·VIP','Aport·Зал1'],datasets:[{label:'Заполняемость %',data:[64,58,82,61,55,67,74,49],backgroundColor:function(c){const v=c.raw;return v>=70?GREEN:v>=55?BLUE:ACC;},borderRadius:4}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{...grid,max:100},x:{grid:{display:false},ticks:{maxRotation:35}}}}});
+
+ // LOYALTY
+ const mo=['Янв','Фев','Мар','Апр','Май','Июн'];
+ mk('ly1',{type:'bar',data:{labels:mo,datasets:[
+   {label:'Активные (тыс.)',data:[108,112,116,120,124,128],backgroundColor:BLUE,borderRadius:4,yAxisID:'y'},
+   {label:'Новые (тыс.)',type:'line',data:[7.2,7.8,8.4,8.9,9.4,9.9],borderColor:ACC,tension:.35,yAxisID:'y1'}]},
+   options:{maintainAspectRatio:false,scales:{y:{...grid,position:'left'},y1:{position:'right',grid:{display:false}},x:{grid:{display:false}}}}});
+ mk('ly2',{type:'line',data:{labels:['M0','M1','M2','M3','M4','M5'],datasets:[
+   {label:'Когорта Янв',data:[100,68,57,51,47,44],borderColor:BLUE,tension:.3},
+   {label:'Когорта Мар',data:[100,71,60,55,50,null],borderColor:TEAL,tension:.3},
+   {label:'Когорта Май',data:[100,74,63,null,null,null],borderColor:GREEN,tension:.3}]},
+   options:{maintainAspectRatio:false,scales:{y:{...grid,max:100},x:{grid:{display:false}}}}});
+ mk('ly3',{type:'bar',data:{labels:wk,datasets:[
+   {label:'Участники',data:[31,33,33,38],backgroundColor:BLUE,borderRadius:3,stack:'s'},
+   {label:'Гости',data:[46,49,49,49],backgroundColor:GREY,borderRadius:3,stack:'s'}]},
+   options:{maintainAspectRatio:false,scales:{y:grid,x:{grid:{display:false}}}}});
+ mk('ly4',{type:'doughnut',data:{labels:['Чемпионы','Постоянные','Случайные','Спящие'],datasets:[{data:[18,34,31,17],backgroundColor:[GREEN,BLUE,ACC,GREY]}]},options:{maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right'}}}});
+
+ // OPEX
+ mk('op1',{type:'bar',data:{labels:mo,datasets:[
+   {label:'Выручка',data:[268,279,291,298,305,312],backgroundColor:BLUE,borderRadius:4},
+   {label:'Расходы',data:[201,205,210,214,217,221],backgroundColor:GREY,borderRadius:4},
+   {label:'EBITDA',type:'line',data:[67,74,81,84,88,91],borderColor:GREEN,tension:.3}]},
+   options:{maintainAspectRatio:false,scales:{y:grid,x:{grid:{display:false}}}}});
+ mk('op2',{type:'doughnut',data:{labels:['Аренда','ФОТ','Кинопрокат (роялти)','Закупки бара','Коммунальные','Маркетинг','Прочее'],datasets:[{data:[58,52,46,27,14,13,11],backgroundColor:[NAVY,BLUE,VIO,ACC,TEAL,'#E8A33D',GREY]}]},options:{maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'right'}}}});
+ const op=[['Выручка','300','312','+12','104%'],['Кинопрокат (роялти)','44','46','+2','105%'],['ФОТ','50','52','+2','104%'],['Аренда','58','58','0','100%'],['Закупки бара','25','27','+2','108%'],['Коммунальные','15','14','−1','93%'],['Маркетинг','14','13','−1','93%'],['EBITDA','88','91','+3','104%']];
+ fillTable('opTable',op,[1,2,3],4);
+}
+function fillTable(id,rows,numCols,pct){
+ const tb=document.getElementById(id);if(!tb)return;tb.innerHTML='';
+ rows.forEach(r=>{const tr=document.createElement('tr');
+  r.forEach((c,i)=>{const td=document.createElement('td');
+   if(i>0)td.className='num';
+   td.textContent=c;tr.appendChild(td);});
+  tb.appendChild(tr);});
+}
+// nav
+document.querySelectorAll('#nav button').forEach(b=>b.addEventListener('click',()=>{
+ document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active');
+ const v=b.dataset.v;
+ document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+ document.getElementById(v).classList.add('active');
+ const meta={exec:['Сводный дашборд руководителя','Ключевые показатели сети за период'],
+  tickets:['Продажи билетов','Объём, каналы, цены и топ фильмов'],
+  sessions:['Доходность сеансов','Эффективность сеансов и заполняемость'],
+  bar:['Выручка бара / фудкорта','Продажи, средний чек, attach rate и маржа'],
+  attend:['Посещаемость','Загрузка залов по дням, часам и кинотеатрам'],
+  loyalty:['Динамика лояльности','База участников, retention и вклад в выручку'],
+  opex:['Операционные расходы / P&L','Выручка, расходы и рентабельность']};
+ document.getElementById('title').textContent=meta[v][0];
+ document.getElementById('desc').textContent=meta[v][1];
+}));
+build();
+</script>
+</body>
+</html>
